@@ -124,6 +124,7 @@ document.getElementById('ventaForm').addEventListener('submit', async (e) => {
         if (formData.tipoVenta === 'CONTADO') {
             endpoint = '/contabilidad/venta-contado';
             requestBody = {
+                numeroOperacion: formData.numeroOperacion,
                 cliente: formData.cliente,
                 montoTotal: formData.montoTotal,
                 descripcion: formData.descripcion || `Venta al contado - ${formData.cliente}`,
@@ -132,11 +133,13 @@ document.getElementById('ventaForm').addEventListener('submit', async (e) => {
                 numeroDocumento: formData.numeroDocumento,
                 tipoDocumentoIdentidad: formData.tipoDocumentoIdentidad,
                 numeroDocumentoIdentidad: formData.numeroDocumentoIdentidad,
-                fechaEmision: formData.fechaEmision
+                fechaEmision: formData.fechaEmision,
+                fechaVencimiento: formData.fechaVencimiento
             };
         } else if (formData.tipoVenta === 'CREDITO') {
             endpoint = '/contabilidad/venta-credito';
             requestBody = {
+                numeroOperacion: formData.numeroOperacion,
                 cliente: formData.cliente,
                 montoTotal: formData.montoTotal,
                 descripcion: formData.descripcion || `Venta a crédito - ${formData.cliente}`,
