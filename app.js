@@ -369,7 +369,7 @@ async function consultarLibroMayor() {
                     descripcion: 'Compra de mercaderías',
                     debe: monto.toFixed(2),
                     haber: '0.00',
-                    proceso: `AS-${mov.id}-C`
+                    proceso: `AS-${mov.nombre}-C`
                 });
                 
                 // Movimiento V (Venta) - Debe en cero, Haber con monto
