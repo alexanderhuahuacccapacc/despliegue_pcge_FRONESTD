@@ -101,12 +101,6 @@ document.getElementById('ventaForm').addEventListener('submit', async (e) => {
     
     // Validaciones
     if (!validarFormularioVenta(formData)) {
-        showNotification('❌ Por favor completa todos los campos obligatorios', 'error');
-        return;
-    }
-    
-    if (formData.montoTotal <= 0) {
-        showNotification('❌ El monto total debe ser mayor a cero', 'error');
         return;
     }
     
@@ -177,6 +171,69 @@ document.getElementById('ventaForm').addEventListener('submit', async (e) => {
         button.disabled = false;
     }
 });
+
+// FUNCIÓN PARA VALIDAR DOCUMENTOS DE IDENTIDAD
+function validarDocumentoIdentidad(tipoDocumento, numeroDocumento) {
+    // Eliminar espacios y caracteres especiales
+    const numeroLimpio = numeroDocumento.replace(/\s+/g, '').replace(/[^\d]/g, '');
+    
+    switch(tipoDocumento) {
+        case '1': // DNI
+            if (!/^\d{8}$/.test(numeroLimpio)) {
+                showNotification('❌ El DNI debe tener exactamente 8 dígitos numéricos', 'error');
+                return false;
+            }
+            break;
+            
+        case '6': // RUC
+            if (!/^\d{11}$/.test(numeroLimpio)) {
+                showNotification('❌ El RUC debe tener exactamente 11 dígitos numéricos', 'error');
+                return false;
+            }
+            break;
+            
+        case '4': // Carnet de Extranjería
+            if (!/^[A-Za-z0-9]{6,12}$/.test(numeroLimpio)) {
+                showNotification('❌ El Carnet de Extranjería debe tener entre 6 y 12 caracteres alfanuméricos', 'error');
+                return false;
+            }
+            break;
+            
+        case '7': // Pasaporte
+            if (!/^[A-Za-z0-9]{6,12}$/.test(numeroLimpio)) {
+                showNotification('❌ El Pasaporte debe tener entre 6 y 12 caracteres alfanuméricos', 'error');
+                return false;
+            }
+            break;
+            
+        default:
+            showNotification('❌ Tipo de documento no válido', 'error');
+            return false;
+    }
+    
+    return true;
+}
+
+// FUNCIÓN PARA VALIDAR NÚMERO DE SERIE
+function validarNumeroSerie(numeroSerie) {
+    // Validar formato: letra + 3 números (Ej: F001, B001)
+    if (!/^[A-Za-z]\d{3}$/.test(numeroSerie.trim())) {
+        showNotification('❌ El número de serie debe tener el formato: Letra + 3 números (Ej: F001, B001)', 'error');
+        return false;
+    }
+    return true;
+}
+
+// FUNCIÓN PARA VALIDAR NÚMERO DE DOCUMENTO
+function validarNumeroDocumento(numeroDocumento) {
+    // Validar que sea numérico y tenga entre 1 y 20 dígitos
+    if (!/^\d{1,20}$/.test(numeroDocumento.trim())) {
+        showNotification('❌ El número de documento debe contener solo números (máximo 20 dígitos)', 'error');
+        return false;
+    }
+    return true;
+}
+
 function validarFormularioVenta(formData) {
     const camposRequeridos = [
         'numeroOperacion',
@@ -185,6 +242,7 @@ function validarFormularioVenta(formData) {
         'numeroDocumentoIdentidad', 'fechaEmision'
     ];
     
+    // Validar campos requeridos
     for (const campo of camposRequeridos) {
         if (!formData[campo]) {
             showNotification(`❌ El campo ${campo} es obligatorio`, 'error');
@@ -192,8 +250,24 @@ function validarFormularioVenta(formData) {
         }
     }
     
+    // Validar monto total
     if (formData.montoTotal <= 0 || isNaN(formData.montoTotal)) {
         showNotification('❌ El monto total debe ser un número mayor a cero', 'error');
+        return false;
+    }
+    
+    // Validar número de serie
+    if (!validarNumeroSerie(formData.numeroSerie)) {
+        return false;
+    }
+    
+    // Validar número de documento
+    if (!validarNumeroDocumento(formData.numeroDocumento)) {
+        return false;
+    }
+    
+    // Validar documento de identidad
+    if (!validarDocumentoIdentidad(formData.tipoDocumentoIdentidad, formData.numeroDocumentoIdentidad)) {
         return false;
     }
     
@@ -223,14 +297,38 @@ document.getElementById('tipoVenta').addEventListener('change', function() {
     }
 });
 
-// Función para cargar comprobantes registrados
+// VALIDACIÓN EN TIEMPO REAL PARA LOS CAMPOS
+document.getElementById('numeroDocumentoIdentidad').addEventListener('input', function(e) {
+    const tipoDocumento = document.getElementById('tipoDocumentoIdentidad').value;
+    const numeroDocumento = e.target.value;
+    
+    if (tipoDocumento && numeroDocumento) {
+        // Solo validar si ambos campos tienen valor
+        validarDocumentoIdentidad(tipoDocumento, numeroDocumento);
+    }
+});
+
+document.getElementById('numeroSerie').addEventListener('input', function(e) {
+    const numeroSerie = e.target.value;
+    if (numeroSerie) {
+        validarNumeroSerie(numeroSerie);
+    }
+});
+
+document.getElementById('numeroDocumento').addEventListener('input', function(e) {
+    const numeroDocumento = e.target.value;
+    if (numeroDocumento) {
+        validarNumeroDocumento(numeroDocumento);
+    }
+});
+
 // Función para cargar comprobantes registrados
 async function cargarComprobantes() {
     try {
         const tbody = document.getElementById('comprobantes-list');
         tbody.innerHTML = '<tr><td colspan="11" class="loading">Cargando comprobantes...</td></tr>';
         
-        console.log('📋 Intentando cargar comprobantes...');
+        console.log('📋 Intentando cargar compprobantes...');
         const comprobantes = await apiCall('/contabilidad/comprobantes');
         console.log('✅ Comprobantes recibidos:', comprobantes);
         
