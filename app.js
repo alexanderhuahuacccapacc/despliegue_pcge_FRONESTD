@@ -81,6 +81,7 @@ document.getElementById('ventaForm').addEventListener('submit', async (e) => {
     
     const formData = {
         // Datos básicos
+        numeroOperacion: parseInt(document.getElementById('numeroOperacion').value),
         cliente: document.getElementById('cliente').value.trim(),
         tipoVenta: document.getElementById('tipoVenta').value,
         montoTotal: parseFloat(document.getElementById('montoTotal').value),
@@ -176,6 +177,7 @@ document.getElementById('ventaForm').addEventListener('submit', async (e) => {
 });
 function validarFormularioVenta(formData) {
     const camposRequeridos = [
+        'numeroOperacion',
         'cliente', 'tipoVenta', 'montoTotal', 'tipoComprobante',
         'numeroSerie', 'numeroDocumento', 'tipoDocumentoIdentidad',
         'numeroDocumentoIdentidad', 'fechaEmision'
