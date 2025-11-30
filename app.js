@@ -134,7 +134,6 @@ document.getElementById('ventaForm').addEventListener('submit', async (e) => {
                 tipoDocumentoIdentidad: formData.tipoDocumentoIdentidad,
                 numeroDocumentoIdentidad: formData.numeroDocumentoIdentidad,
                 fechaEmision: formData.fechaEmision,
-                fechaVencimiento: formData.fechaVencimiento
             };
         } else if (formData.tipoVenta === 'CREDITO') {
             endpoint = '/contabilidad/venta-credito';
