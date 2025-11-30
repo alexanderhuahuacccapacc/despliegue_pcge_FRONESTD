@@ -172,6 +172,9 @@ document.getElementById('ventaForm').addEventListener('submit', async (e) => {
     }
 });
 
+// VARIABLE PARA CONTROLAR EL ESTADO DE VALIDACIÓN
+let formularioValido = false;
+
 // FUNCIÓN PARA VALIDAR DOCUMENTOS DE IDENTIDAD
 function validarDocumentoIdentidad(tipoDocumento, numeroDocumento) {
     // Eliminar espacios y caracteres especiales
@@ -180,61 +183,93 @@ function validarDocumentoIdentidad(tipoDocumento, numeroDocumento) {
     switch(tipoDocumento) {
         case '1': // DNI
             if (!/^\d{8}$/.test(numeroLimpio)) {
-                showNotification('❌ El DNI debe tener exactamente 8 dígitos numéricos', 'error');
-                return false;
+                return { valido: false, mensaje: '❌ El DNI debe tener exactamente 8 dígitos numéricos' };
             }
             break;
             
         case '6': // RUC
             if (!/^\d{11}$/.test(numeroLimpio)) {
-                showNotification('❌ El RUC debe tener exactamente 11 dígitos numéricos', 'error');
-                return false;
+                return { valido: false, mensaje: '❌ El RUC debe tener exactamente 11 dígitos numéricos' };
             }
             break;
             
         case '4': // Carnet de Extranjería
             if (!/^[A-Za-z0-9]{6,12}$/.test(numeroLimpio)) {
-                showNotification('❌ El Carnet de Extranjería debe tener entre 6 y 12 caracteres alfanuméricos', 'error');
-                return false;
+                return { valido: false, mensaje: '❌ El Carnet de Extranjería debe tener entre 6 y 12 caracteres alfanuméricos' };
             }
             break;
             
         case '7': // Pasaporte
             if (!/^[A-Za-z0-9]{6,12}$/.test(numeroLimpio)) {
-                showNotification('❌ El Pasaporte debe tener entre 6 y 12 caracteres alfanuméricos', 'error');
-                return false;
+                return { valido: false, mensaje: '❌ El Pasaporte debe tener entre 6 y 12 caracteres alfanuméricos' };
             }
             break;
             
         default:
-            showNotification('❌ Tipo de documento no válido', 'error');
-            return false;
+            return { valido: false, mensaje: '❌ Tipo de documento no válido' };
     }
     
-    return true;
+    return { valido: true, mensaje: '' };
 }
 
 // FUNCIÓN PARA VALIDAR NÚMERO DE SERIE
 function validarNumeroSerie(numeroSerie) {
     // Validar formato: letra + 3 números (Ej: F001, B001)
     if (!/^[A-Za-z]\d{3}$/.test(numeroSerie.trim())) {
-        showNotification('❌ El número de serie debe tener el formato: Letra + 3 números (Ej: F001, B001)', 'error');
-        return false;
+        return { valido: false, mensaje: '❌ El número de serie debe tener el formato: Letra + 3 números (Ej: F001, B001)' };
     }
-    return true;
+    return { valido: true, mensaje: '' };
 }
 
 // FUNCIÓN PARA VALIDAR NÚMERO DE DOCUMENTO
 function validarNumeroDocumento(numeroDocumento) {
     // Validar que sea numérico y tenga entre 1 y 20 dígitos
     if (!/^\d{1,20}$/.test(numeroDocumento.trim())) {
-        showNotification('❌ El número de documento debe contener solo números (máximo 20 dígitos)', 'error');
-        return false;
+        return { valido: false, mensaje: '❌ El número de documento debe contener solo números (máximo 20 dígitos)' };
     }
-    return true;
+    return { valido: true, mensaje: '' };
 }
 
-function validarFormularioVenta(formData) {
+// FUNCIÓN PARA ACTUALIZAR EL ESTADO DEL BOTÓN
+function actualizarEstadoBoton() {
+    const boton = document.querySelector('#ventaForm button[type="submit"]');
+    const campos = obtenerValoresFormulario();
+    
+    // Validar todos los campos
+    const validacion = validarFormularioVenta(campos, true); // true = validación silenciosa
+    
+    if (validacion.valido) {
+        boton.disabled = false;
+        boton.classList.remove('btn-disabled');
+        boton.classList.add('btn-success');
+        boton.title = 'Haz clic para registrar la venta';
+    } else {
+        boton.disabled = true;
+        boton.classList.add('btn-disabled');
+        boton.classList.remove('btn-success');
+        boton.title = validacion.mensaje || 'Completa correctamente todos los campos';
+    }
+}
+
+// FUNCIÓN PARA OBTENER VALORES DEL FORMULARIO
+function obtenerValoresFormulario() {
+    return {
+        numeroOperacion: parseInt(document.getElementById('numeroOperacion').value),
+        cliente: document.getElementById('cliente').value.trim(),
+        tipoVenta: document.getElementById('tipoVenta').value,
+        montoTotal: parseFloat(document.getElementById('montoTotal').value) || 0,
+        descripcion: document.getElementById('descripcion').value.trim(),
+        tipoComprobante: document.getElementById('tipoComprobante').value,
+        numeroSerie: document.getElementById('numeroSerie').value.trim(),
+        numeroDocumento: document.getElementById('numeroDocumento').value.trim(),
+        tipoDocumentoIdentidad: document.getElementById('tipoDocumentoIdentidad').value,
+        numeroDocumentoIdentidad: document.getElementById('numeroDocumentoIdentidad').value.trim(),
+        fechaEmision: document.getElementById('fechaEmision').value,
+        fechaVencimiento: document.getElementById('fechaVencimiento').value
+    };
+}
+
+function validarFormularioVenta(formData, silencioso = false) {
     const camposRequeridos = [
         'numeroOperacion',
         'cliente', 'tipoVenta', 'montoTotal', 'tipoComprobante',
@@ -245,39 +280,45 @@ function validarFormularioVenta(formData) {
     // Validar campos requeridos
     for (const campo of camposRequeridos) {
         if (!formData[campo]) {
-            showNotification(`❌ El campo ${campo} es obligatorio`, 'error');
-            return false;
+            if (!silencioso) showNotification(`❌ El campo ${campo} es obligatorio`, 'error');
+            return { valido: false, mensaje: `Falta completar: ${campo}` };
         }
     }
     
     // Validar monto total
     if (formData.montoTotal <= 0 || isNaN(formData.montoTotal)) {
-        showNotification('❌ El monto total debe ser un número mayor a cero', 'error');
-        return false;
+        if (!silencioso) showNotification('❌ El monto total debe ser un número mayor a cero', 'error');
+        return { valido: false, mensaje: 'Monto total inválido' };
     }
     
     // Validar número de serie
-    if (!validarNumeroSerie(formData.numeroSerie)) {
-        return false;
+    const validacionSerie = validarNumeroSerie(formData.numeroSerie);
+    if (!validacionSerie.valido) {
+        if (!silencioso) showNotification(validacionSerie.mensaje, 'error');
+        return { valido: false, mensaje: 'Número de serie inválido' };
     }
     
     // Validar número de documento
-    if (!validarNumeroDocumento(formData.numeroDocumento)) {
-        return false;
+    const validacionDocumento = validarNumeroDocumento(formData.numeroDocumento);
+    if (!validacionDocumento.valido) {
+        if (!silencioso) showNotification(validacionDocumento.mensaje, 'error');
+        return { valido: false, mensaje: 'Número de documento inválido' };
     }
     
     // Validar documento de identidad
-    if (!validarDocumentoIdentidad(formData.tipoDocumentoIdentidad, formData.numeroDocumentoIdentidad)) {
-        return false;
+    const validacionIdentidad = validarDocumentoIdentidad(formData.tipoDocumentoIdentidad, formData.numeroDocumentoIdentidad);
+    if (!validacionIdentidad.valido) {
+        if (!silencioso) showNotification(validacionIdentidad.mensaje, 'error');
+        return { valido: false, mensaje: 'Documento de identidad inválido' };
     }
     
     // Validación específica para crédito
     if (formData.tipoVenta === 'CREDITO' && !formData.fechaVencimiento) {
-        showNotification('❌ Para ventas a crédito, la fecha de vencimiento es obligatoria', 'error');
-        return false;
+        if (!silencioso) showNotification('❌ Para ventas a crédito, la fecha de vencimiento es obligatoria', 'error');
+        return { valido: false, mensaje: 'Fecha de vencimiento requerida para crédito' };
     }
     
-    return true;
+    return { valido: true, mensaje: 'Formulario válido' };
 }
 
 // Función para calcular fecha de vencimiento por defecto (30 días)
@@ -295,31 +336,28 @@ document.getElementById('tipoVenta').addEventListener('change', function() {
     } else {
         fechaVencimientoGroup.style.display = 'none';
     }
+    actualizarEstadoBoton(); // Actualizar estado del botón cuando cambie el tipo de venta
 });
 
-// VALIDACIÓN EN TIEMPO REAL PARA LOS CAMPOS
-document.getElementById('numeroDocumentoIdentidad').addEventListener('input', function(e) {
-    const tipoDocumento = document.getElementById('tipoDocumentoIdentidad').value;
-    const numeroDocumento = e.target.value;
-    
-    if (tipoDocumento && numeroDocumento) {
-        // Solo validar si ambos campos tienen valor
-        validarDocumentoIdentidad(tipoDocumento, numeroDocumento);
+// VALIDACIÓN EN TIEMPO REAL PARA TODOS LOS CAMPOS
+const camposValidacion = [
+    'numeroOperacion', 'cliente', 'tipoVenta', 'montoTotal', 'descripcion',
+    'tipoComprobante', 'numeroSerie', 'numeroDocumento', 'tipoDocumentoIdentidad',
+    'numeroDocumentoIdentidad', 'fechaEmision', 'fechaVencimiento'
+];
+
+camposValidacion.forEach(campoId => {
+    const campo = document.getElementById(campoId);
+    if (campo) {
+        campo.addEventListener('input', actualizarEstadoBoton);
+        campo.addEventListener('change', actualizarEstadoBoton);
+        campo.addEventListener('blur', actualizarEstadoBoton);
     }
 });
 
-document.getElementById('numeroSerie').addEventListener('input', function(e) {
-    const numeroSerie = e.target.value;
-    if (numeroSerie) {
-        validarNumeroSerie(numeroSerie);
-    }
-});
-
-document.getElementById('numeroDocumento').addEventListener('input', function(e) {
-    const numeroDocumento = e.target.value;
-    if (numeroDocumento) {
-        validarNumeroDocumento(numeroDocumento);
-    }
+// Inicializar el estado del botón al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(actualizarEstadoBoton, 500);
 });
 
 // Función para cargar comprobantes registrados
@@ -328,7 +366,7 @@ async function cargarComprobantes() {
         const tbody = document.getElementById('comprobantes-list');
         tbody.innerHTML = '<tr><td colspan="11" class="loading">Cargando comprobantes...</td></tr>';
         
-        console.log('📋 Intentando cargar compprobantes...');
+        console.log('📋 Intentando cargar comprobantes...');
         const comprobantes = await apiCall('/contabilidad/comprobantes');
         console.log('✅ Comprobantes recibidos:', comprobantes);
         
